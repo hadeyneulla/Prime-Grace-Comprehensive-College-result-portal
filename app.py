@@ -52,7 +52,7 @@ def encrypt_pdf(file_path, password):
 with st.container():
     st.info("💡 Enter your child's Matric/Admission Number below to retrieve their result.")
     
-    matric_input = st.text_input("Matric / Admission Number:", placeholder="e.g. PGCC/2020/045").strip()
+    matric_input = st.text_input("Matric / Admission Number:", placeholder="e.g. PGCC20210118").strip()
     
     search_clicked = st.button("🔎 Search Result")
 
@@ -61,11 +61,12 @@ if search_clicked:
         st.warning("Please enter a valid Admission/Matric number.")
     else:
         clean_user_input = clean_string(matric_input)
-        pdf_folder = "results_pdf"
+        
+        # Look directly in the main repository folder where your PDFs are uploaded
+        pdf_folder = "." 
         
         found_file = None
         
-        # Look for matching PDF file in results_pdf folder
         if os.path.exists(pdf_folder):
             for file in os.listdir(pdf_folder):
                 if file.lower().endswith(".pdf"):
