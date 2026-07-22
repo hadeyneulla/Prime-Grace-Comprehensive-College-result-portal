@@ -5,7 +5,7 @@ from pypdf import PdfReader, PdfWriter
 import io
 
 # -------------------------------------------------------------
-# PAGE CONFIGURATION & SCHOOL STYLING
+# PAGE CONFIGURATION
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Prime Grace Comprehensive College - Result Portal",
@@ -13,40 +13,83 @@ st.set_page_config(
     layout="centered"
 )
 
-# Custom School Styling
+# -------------------------------------------------------------
+# SLEEK PROFESSIONAL STYLING & CENTERING
+# -------------------------------------------------------------
 st.markdown("""
     <style>
-    .main-title { text-align: center; color: #1F4E79; font-weight: bold; font-size: 2rem; margin-top: 10px; }
-    .sub-title { text-align: center; color: #555; margin-bottom: 20px; font-size: 1.1rem; }
-    .welcome-card { 
-        background-color: #F0F4F8; 
-        padding: 20px; 
-        border-radius: 10px; 
-        border-left: 5px solid #1F4E79;
-        margin-bottom: 25px;
-        color: #333;
+    .stApp {
+        background-color: #FFFFFF;
     }
-    .stButton>button { width: 100%; background-color: #1F4E79; color: white; font-weight: bold; padding: 10px; }
-    .stButton>button:hover { background-color: #153859; color: white; }
+    
+    [data-testid="stImage"] {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+        margin-bottom: -10px;
+    }
+    
+    .main-title { 
+        text-align: center; 
+        color: #0A4D2E; 
+        font-weight: 800; 
+        font-size: 2.2rem; 
+        margin-top: 10px;
+        margin-bottom: 5px;
+        line-height: 1.2;
+    }
+    .sub-title { 
+        text-align: center; 
+        color: #555555; 
+        margin-bottom: 25px; 
+        font-size: 1.1rem; 
+        font-weight: 600;
+    }
+    
+    .welcome-card { 
+        background-color: #F8FBF9; 
+        padding: 25px; 
+        border-radius: 12px; 
+        border-left: 6px solid #0A4D2E; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        margin-bottom: 25px;
+        color: #333333;
+        font-size: 1.05rem;
+        line-height: 1.6;
+    }
+    
+    .stButton>button { 
+        width: 100%; 
+        background-color: #0A4D2E; 
+        color: white; 
+        font-weight: bold; 
+        font-size: 1.1rem;
+        padding: 12px; 
+        border-radius: 8px;
+        border: none;
+    }
+    .stButton>button:hover { 
+        background-color: #073820; 
+        color: white; 
+    }
     </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 🏫 SCHOOL LOGO & HEADER
 # -------------------------------------------------------------
-LOGO_URL = "logo.png"
-
-col1, col2, col3 = st.columns([1, 1, 1])
-with col2:
+try:
+    st.image("logo.png", width=150)
+except:
     try:
-        st.image(LOGO_URL, width=120)
+        st.image("logo.png.png", width=150)
     except:
-        pass # Fallback if image is missing
+        pass
 
 st.markdown("<h1 class='main-title'>Prime Grace Comprehensive College</h1>", unsafe_allow_html=True)
 st.markdown("<h4 class='sub-title'>Official Student Result & Assessment Portal</h4>", unsafe_allow_html=True)
 
-# Thoughtful Welcome Note
 st.markdown("""
     <div class="welcome-card">
         <strong>Dear Parents and Guardians,</strong><br><br>
@@ -60,15 +103,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 🔒 CONTROL ACCESS LIST (Approved Parents Only)
+# 🔒 RESTRICTED MATRIC NUMBERS
 # -------------------------------------------------------------
-ALLOW_ALL = False 
-
-# 👉 PASTE YOUR APPROVED STUDENT MATRIC NUMBERS HERE:
-ALLOWED_MATRIC_NUMBERS = [
-    "PGCC20210118",
-    "PGCC20210119",
-    "PGCC20250198"
+RESTRICTED_MATRIC_NUMBERS = [
+    "PGCC20250215",  # Ogunsola Muiz
+    "PGCC20250218",  # Fatai Feranmi
+    "PGCC20230162",  # Akinlesi Semilore
+    "PGCC20230167",  # Dauda Muibat
+    "PGCC20230171",  # Ogunmuyiwa Roheem
+    "PGCC20250221",  # Ogunsola Waliyat
+    "PGCC20220145",  # Olatokun Oyinkansola
+    "PGCC20250227",  # Ogunsola Ramat
 ]
 
 # -------------------------------------------------------------
@@ -93,7 +138,7 @@ def encrypt_pdf(file_path, password):
 # -------------------------------------------------------------
 # FORM INPUT
 # -------------------------------------------------------------
-st.markdown("### 🔍 Check Student Result")
+st.markdown("<h3 style='color: #0A4D2E; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
 matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20210118").strip()
 
 search_clicked = st.button("Retrieve Result")
@@ -104,11 +149,11 @@ if search_clicked:
     else:
         clean_user_input = clean_string(matric_input)
         
-        # Check Access Permission
-        is_allowed = ALLOW_ALL or any(clean_user_input == clean_string(m) for m in ALLOWED_MATRIC_NUMBERS)
+        # Check if the student is restricted
+        is_blocked = any(clean_user_input == clean_string(m) for m in RESTRICTED_MATRIC_NUMBERS)
         
-        if not is_allowed:
-            st.warning("⚠️ **Result Not Yet Available**")
+        if is_blocked:
+            st.warning("⚠️ **Result Not Available**")
             st.info("Your child's result portal access is currently restricted or pending clearance. Please contact the school administration for further details.")
         else:
             pdf_folder = "." 
@@ -128,7 +173,7 @@ if search_clicked:
                 protected_pdf_buffer = encrypt_pdf(found_file, matric_input)
                 
                 st.markdown("---")
-                st.markdown("### 🔒 Important Security Notice")
+                st.markdown("<h3 style='color: #0A4D2E;'>🔒 Important Security Notice</h3>", unsafe_allow_html=True)
                 st.info(
                     f"This PDF file is password-protected for privacy.\n\n"
                     f"**Password to open the PDF:** `{matric_input}`\n\n"
@@ -141,8 +186,6 @@ if search_clicked:
                     file_name=f"PrimeGrace_Result_{clean_user_input}.pdf",
                     mime="application/pdf"
                 )
-                
-                st.markdown("<br><p style='text-align: center; color: #777; font-size: 0.9rem;'>For enquiries, please contact the school administration directly.</p>", unsafe_allow_html=True)
             else:
                 st.error("❌ No result file found matching that Admission/Matric Number.")
                 st.caption("Please check for typing errors or contact the school administration.")
