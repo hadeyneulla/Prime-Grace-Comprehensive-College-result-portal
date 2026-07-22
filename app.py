@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# SLEEK PROFESSIONAL STYLING (THEME OVERRIDE FOR DARK/LIGHT MODE)
+# SLEEK PROFESSIONAL STYLING (BUTTON & THEME FIX)
 # -------------------------------------------------------------
 st.markdown("""
     <style>
@@ -56,23 +56,27 @@ st.markdown("""
         line-height: 1.6 !important;
     }
     
-    /* Sleek Action Button */
-    .stButton>button { 
+    /* Force ALL buttons (Retrieve & Download) to have high contrast white text */
+    div.stButton > button, div.stDownloadButton > button { 
         width: 100% !important; 
         background-color: #0A4D2E !important; 
+        border-radius: 8px !important;
+        border: none !important;
+        padding: 12px !important;
+    }
+    
+    /* Force button text, paragraph, and span inside buttons to be bright white */
+    div.stButton > button *, div.stDownloadButton > button * {
         color: #FFFFFF !important; 
         font-weight: bold !important; 
         font-size: 1.05rem !important;
-        padding: 12px !important; 
-        border-radius: 8px !important;
-        border: none !important;
-    }
-    .stButton>button:hover { 
-        background-color: #073820 !important; 
-        color: #FFFFFF !important; 
     }
     
-    /* Ensure input labels and texts remain high-contrast */
+    div.stButton > button:hover, div.stDownloadButton > button:hover { 
+        background-color: #073820 !important; 
+    }
+    
+    /* Ensure general text labels are crisp */
     label, p, span {
         color: #222222 !important;
     }
