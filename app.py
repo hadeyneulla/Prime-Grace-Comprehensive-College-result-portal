@@ -14,28 +14,22 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# SLEEK PROFESSIONAL STYLING & CENTERING
+# SLEEK PROFESSIONAL STYLING
 # -------------------------------------------------------------
 st.markdown("""
     <style>
+    /* Clean white background */
     .stApp {
         background-color: #FFFFFF;
     }
     
-    [data-testid="stImage"] {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin-top: 10px;
-        margin-bottom: -10px;
-    }
-    
+    /* Sleek Typography for Title & Subtitle */
     .main-title { 
         text-align: center; 
         color: #0A4D2E; 
         font-weight: 800; 
-        font-size: 2.2rem; 
-        margin-top: 10px;
+        font-size: 2rem; 
+        margin-top: 15px;
         margin-bottom: 5px;
         line-height: 1.2;
     }
@@ -47,24 +41,26 @@ st.markdown("""
         font-weight: 600;
     }
     
+    /* Professional Welcome Card */
     .welcome-card { 
         background-color: #F8FBF9; 
-        padding: 25px; 
+        padding: 22px; 
         border-radius: 12px; 
         border-left: 6px solid #0A4D2E; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.04); 
         margin-bottom: 25px;
         color: #333333;
-        font-size: 1.05rem;
+        font-size: 1rem;
         line-height: 1.6;
     }
     
+    /* Sleek Button */
     .stButton>button { 
         width: 100%; 
         background-color: #0A4D2E; 
         color: white; 
         font-weight: bold; 
-        font-size: 1.1rem;
+        font-size: 1.05rem;
         padding: 12px; 
         border-radius: 8px;
         border: none;
@@ -77,19 +73,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 🏫 SCHOOL LOGO & HEADER
+# 🏫 SCHOOL LOGO & HEADER (PERFECTLY CENTERED)
 # -------------------------------------------------------------
-try:
-    st.image("logo.png", width=150)
-except:
-    try:
-        st.image("logo.png.png", width=150)
-    except:
-        pass
+c1, c2, c3 = st.columns([1, 1, 1])
+with c2:
+    logo_file = "logo.png" if os.path.exists("logo.png") else ("logo.png.png" if os.path.exists("logo.png.png") else None)
+    if logo_file:
+        st.image(logo_file, use_container_width=True)
 
 st.markdown("<h1 class='main-title'>Prime Grace Comprehensive College</h1>", unsafe_allow_html=True)
 st.markdown("<h4 class='sub-title'>Official Student Result & Assessment Portal</h4>", unsafe_allow_html=True)
 
+# Thoughtful Welcome Note
 st.markdown("""
     <div class="welcome-card">
         <strong>Dear Parents and Guardians,</strong><br><br>
@@ -105,15 +100,16 @@ st.markdown("""
 # -------------------------------------------------------------
 # 🔒 RESTRICTED MATRIC NUMBERS
 # -------------------------------------------------------------
+# To grant access to a student, simply remove or comment out their matric number from this list.
 RESTRICTED_MATRIC_NUMBERS = [
-    "PGCC20250215",  # Ogunsola Muiz
-    "PGCC20250218",  # Fatai Feranmi
-    "PGCC20230162",  # Akinlesi Semilore
-    "PGCC20230167",  # Dauda Muibat
-    "PGCC20230171",  # Ogunmuyiwa Roheem
-    "PGCC20250221",  # Ogunsola Waliyat
-    "PGCC20220145",  # Olatokun Oyinkansola
-    "PGCC20250227",  # Ogunsola Ramat
+    "PGCC20250215",  # Ogunsola Muiz (JSS 2)
+    "PGCC20250218",  # Fatai Feranmi (JSS 3)
+    "PGCC20230162",  # Akinlesi Semilore (JSS 3)
+    "PGCC20230167",  # Dauda Muibat (JSS 3)
+    "PGCC20230171",  # Ogunmuyiwa Roheem (JSS 3)
+    "PGCC20250221",  # Ogunsola Waliyat (SS 1)
+    "PGCC20220145",  # Olatokun Oyinkansola (SS 1)
+    "PGCC20250227",  # Ogunsola Ramat (SS 2)
 ]
 
 # -------------------------------------------------------------
@@ -136,7 +132,7 @@ def encrypt_pdf(file_path, password):
     return buffer
 
 # -------------------------------------------------------------
-# FORM INPUT
+# FORM INPUT & RETRIEVAL
 # -------------------------------------------------------------
 st.markdown("<h3 style='color: #0A4D2E; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
 matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20210118").strip()
@@ -149,7 +145,7 @@ if search_clicked:
     else:
         clean_user_input = clean_string(matric_input)
         
-        # Check if the student is restricted
+        # Check if student is restricted
         is_blocked = any(clean_user_input == clean_string(m) for m in RESTRICTED_MATRIC_NUMBERS)
         
         if is_blocked:
