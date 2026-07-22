@@ -145,7 +145,7 @@ def encrypt_pdf(file_path, password):
 # FORM INPUT & RETRIEVAL
 # -------------------------------------------------------------
 st.markdown("<h3 style='color: #0A4D2E !important; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
-matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20210118").strip()
+matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20100001").strip()
 
 search_clicked = st.button("Retrieve Result")
 
