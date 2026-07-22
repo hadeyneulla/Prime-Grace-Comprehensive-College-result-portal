@@ -14,60 +14,67 @@ st.set_page_config(
 )
 
 # -------------------------------------------------------------
-# SLEEK PROFESSIONAL STYLING
+# SLEEK PROFESSIONAL STYLING (THEME OVERRIDE FOR DARK/LIGHT MODE)
 # -------------------------------------------------------------
 st.markdown("""
     <style>
-    /* Clean white background */
-    .stApp {
-        background-color: #FFFFFF;
+    /* Force main app background to clean white in ALL modes */
+    .stApp, [data-testid="stAppViewContainer"] {
+        background-color: #FFFFFF !important;
     }
     
-    /* Sleek Typography for Title & Subtitle */
+    /* Force School Name to be visible in deep green across all modes */
     .main-title { 
-        text-align: center; 
-        color: #0A4D2E; 
-        font-weight: 800; 
-        font-size: 2rem; 
-        margin-top: 15px;
-        margin-bottom: 5px;
-        line-height: 1.2;
+        text-align: center !important; 
+        color: #0A4D2E !important; 
+        font-weight: 800 !important; 
+        font-size: 2rem !important; 
+        margin-top: 15px !important;
+        margin-bottom: 5px !important;
+        line-height: 1.2 !important;
     }
+    
+    /* Force Subtitle to be visible in clean charcoal grey */
     .sub-title { 
-        text-align: center; 
-        color: #555555; 
-        margin-bottom: 25px; 
-        font-size: 1.1rem; 
-        font-weight: 600;
+        text-align: center !important; 
+        color: #333333 !important; 
+        margin-bottom: 25px !important; 
+        font-size: 1.1rem !important; 
+        font-weight: 600 !important;
     }
     
     /* Professional Welcome Card */
     .welcome-card { 
-        background-color: #F8FBF9; 
-        padding: 22px; 
-        border-radius: 12px; 
-        border-left: 6px solid #0A4D2E; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.04); 
-        margin-bottom: 25px;
-        color: #333333;
-        font-size: 1rem;
-        line-height: 1.6;
+        background-color: #F8FBF9 !important; 
+        padding: 22px !important; 
+        border-radius: 12px !important; 
+        border-left: 6px solid #0A4D2E !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.06) !important; 
+        margin-bottom: 25px !important;
+        color: #222222 !important;
+        font-size: 1rem !important;
+        line-height: 1.6 !important;
     }
     
-    /* Sleek Button */
+    /* Sleek Action Button */
     .stButton>button { 
-        width: 100%; 
-        background-color: #0A4D2E; 
-        color: white; 
-        font-weight: bold; 
-        font-size: 1.05rem;
-        padding: 12px; 
-        border-radius: 8px;
-        border: none;
+        width: 100% !important; 
+        background-color: #0A4D2E !important; 
+        color: #FFFFFF !important; 
+        font-weight: bold !important; 
+        font-size: 1.05rem !important;
+        padding: 12px !important; 
+        border-radius: 8px !important;
+        border: none !important;
     }
     .stButton>button:hover { 
-        background-color: #073820; 
-        color: white; 
+        background-color: #073820 !important; 
+        color: #FFFFFF !important; 
+    }
+    
+    /* Ensure input labels and texts remain high-contrast */
+    label, p, span {
+        color: #222222 !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -100,7 +107,6 @@ st.markdown("""
 # -------------------------------------------------------------
 # 🔒 RESTRICTED MATRIC NUMBERS
 # -------------------------------------------------------------
-# To grant access to a student, simply remove or comment out their matric number from this list.
 RESTRICTED_MATRIC_NUMBERS = [
     "PGCC20250215",  # Ogunsola Muiz (JSS 2)
     "PGCC20250218",  # Fatai Feranmi (JSS 3)
@@ -134,7 +140,7 @@ def encrypt_pdf(file_path, password):
 # -------------------------------------------------------------
 # FORM INPUT & RETRIEVAL
 # -------------------------------------------------------------
-st.markdown("<h3 style='color: #0A4D2E; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
+st.markdown("<h3 style='color: #0A4D2E !important; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
 matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20210118").strip()
 
 search_clicked = st.button("Retrieve Result")
@@ -169,7 +175,7 @@ if search_clicked:
                 protected_pdf_buffer = encrypt_pdf(found_file, matric_input)
                 
                 st.markdown("---")
-                st.markdown("<h3 style='color: #0A4D2E;'>🔒 Important Security Notice</h3>", unsafe_allow_html=True)
+                st.markdown("<h3 style='color: #0A4D2E !important;'>🔒 Important Security Notice</h3>", unsafe_allow_html=True)
                 st.info(
                     f"This PDF file is password-protected for privacy.\n\n"
                     f"**Password to open the PDF:** `{matric_input}`\n\n"
