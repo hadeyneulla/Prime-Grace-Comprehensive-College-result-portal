@@ -131,11 +131,9 @@ portal_data = load_portal_data()
 # -------------------------------------------------------------
 st.markdown("""
     <style>
-    /* Hide Streamlit's automatic # anchor links on headings so URL stays clean */
     [data-testid="stHeaderActionElements"], .stMarkdown a.anchor-link {
         display: none !important;
     }
-
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #FFFFFF !important;
     }
@@ -232,7 +230,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 🏫 HEADER & LOGO (USING DIVS TO PREVENT # URL ANCHORS)
+# 🏫 HEADER & LOGO
 # -------------------------------------------------------------
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
@@ -298,7 +296,7 @@ with tab_results:
             
             if is_blocked:
                 st.warning("⚠️ **Result Not Available**")
-                st.info("Your child's result portal access is currently restricted or pending clearance. Please contact the school administration for further details.")
+                st.info("Your child's result portal access is currently restricted or pending clearance (fee balance). Please contact the school administration for further details.")
             else:
                 pdf_folder = "." 
                 found_file = None
@@ -350,7 +348,7 @@ with tab_news:
         """, unsafe_allow_html=True)
 
 # =============================================================
-# TAB 3: MULTI-CLASS & MULTI-MODE TIMETABLE
+# TAB 3: TIMETABLE
 # =============================================================
 with tab_timetable:
     st.markdown("<div class='section-heading'>📅 Academic & Examination Timetables</div>", unsafe_allow_html=True)
@@ -364,7 +362,7 @@ with tab_timetable:
     with col_mode:
         selected_mode = st.selectbox("Select Timetable Type:", TIMETABLE_MODES, index=default_mode_index, key="public_mode_select")
     
-    st.caption(f"Showing **{selected_mode}** for **{selected_class}** (School Active Mode: *{active_default_mode}*):")
+    st.caption(f"Showing **{selected_mode}** for **{selected_class}**:")
     
     class_schedules = portal_data.get("timetables", {}).get(selected_class, {})
     rows = class_schedules.get(selected_mode, [])
@@ -382,16 +380,65 @@ with tab_timetable:
 # =============================================================
 with tab_admin:
     st.markdown("<div class='section-heading'>🔐 Staff & Admin Dashboard</div>", unsafe_allow_html=True)
-    st.caption("Enter the administrator passcode to manage announcements, timetables, and student result access.")
+    st.caption("Enter the administrator passcode to upload results, block defaulters, and manage updates.")
     
     entered_pin = st.text_input("Enter Admin Secret PIN:", type="password", key="admin_pin_input")
     
     if entered_pin == ADMIN_PIN:
         st.success("✅ Access Granted: Welcome Administrator!")
         
-        # --- Section A: Manage News ---
+        # --- Section A: Upload New Student Result PDF ---
         st.markdown("---")
-        st.markdown("**📢 1. Manage School Notices & News**")
+        st.markdown("**📤 1. Upload Student Result PDF**")
+        st.caption("Upload a student result PDF directly. Name the file with their matric number (e.g. PGCC20250198.pdf).")
+        
+        uploaded_pdf = st.file_uploader("Choose Student Result PDF file:", type=["pdf"])
+        if uploaded_pdf is not None:
+            save_path = uploaded_pdf.name
+            with open(save_path, "wb") as f:
+                f.write(uploaded_pdf.getbuffer())
+            st.success(f"Successfully uploaded and saved **{save_path}** to the portal storage!")
+            st.info("Parents can now search and download this result immediately.")
+
+        # --- Section B: Student Result Access Control (Block / Unblock Defaulters) ---
+        st.markdown("---")
+        st.markdown("**🔒 2. Student Fee Clearance & Result Lock (Block/Unblock)**")
+        st.caption("Lock results for students with unpaid fees, or unblock them once they clear their balance.")
+        
+        current_restricted = portal_data.get("restricted_matric_numbers", DEFAULT_RESTRICTED)
+        
+        col_block, col_unblock = st.columns(2)
+        with col_block:
+            st.markdown("##### 🔒 Lock / Restrict Student")
+            new_block = st.text_input("Enter Matric No to Lock:", placeholder="e.g. PGCC20250198", key="block_input_box").strip().upper()
+            if st.button("Lock Result Access"):
+                if new_block:
+                    clean_b = clean_string(new_block)
+                    if clean_b not in [clean_string(m) for m in current_restricted]:
+                        portal_data["restricted_matric_numbers"].append(new_block)
+                        save_portal_data(portal_data)
+                        st.success(f"Result for **{new_block}** is now locked due to fee balance.")
+                        st.rerun()
+                    else:
+                        st.warning("This student is already restricted.")
+                else:
+                    st.warning("Please enter a valid matric number.")
+                    
+        with col_unblock:
+            st.markdown("##### 🔓 Unlock / Clear Student")
+            if current_restricted:
+                unblock_student = st.selectbox("Select Restricted Matric No to Unlock:", current_restricted, key="unblock_select_box")
+                if st.button("Unlock Result Access"):
+                    portal_data["restricted_matric_numbers"].remove(unblock_student)
+                    save_portal_data(portal_data)
+                    st.success(f"Access granted for **{unblock_student}**! Result is now unlocked.")
+                    st.rerun()
+            else:
+                st.info("No students are currently restricted.")
+
+        # --- Section C: Manage News ---
+        st.markdown("---")
+        st.markdown("**📢 3. Manage School Notices & News**")
         
         with st.expander("➕ Publish a New Announcement"):
             new_tag = st.selectbox("Category Tag:", ["ADMINISTRATION", "ACADEMICS", "ANNOUNCEMENT", "EXAMINATION", "EVENT"])
@@ -419,9 +466,9 @@ with tab_admin:
             else:
                 st.write("No notices available to delete.")
 
-        # --- Section B: Manage Timetables ---
+        # --- Section D: Manage Timetables ---
         st.markdown("---")
-        st.markdown("**📅 2. Edit Class & Exam Timetables**")
+        st.markdown("**📅 4. Edit Class & Exam Timetables**")
         
         current_active = portal_data.get("active_timetable_mode", "Regular Class Timetable")
         active_idx = TIMETABLE_MODES.index(current_active) if current_active in TIMETABLE_MODES else 0
@@ -470,31 +517,6 @@ with tab_admin:
                 save_portal_data(portal_data)
                 st.success(f"Copied and saved {edit_mode} across all classes (JSS 1 - SS 3)!")
                 st.rerun()
-
-        # --- Section C: Manage Restricted Students ---
-        st.markdown("---")
-        st.markdown("**🔒 3. Student Result Access Control (Block / Unblock)**")
-        current_restricted = portal_data.get("restricted_matric_numbers", DEFAULT_RESTRICTED)
-        
-        with st.expander(f"Manage Restricted Students ({len(current_restricted)} currently blocked)"):
-            if current_restricted:
-                unblock_student = st.selectbox("Select a Matric Number to UNBLOCK (Grant Access):", current_restricted)
-                if st.button("🔓 Unblock Selected Student"):
-                    portal_data["restricted_matric_numbers"].remove(unblock_student)
-                    save_portal_data(portal_data)
-                    st.success(f"Access granted for {unblock_student}!")
-                    st.rerun()
-            else:
-                st.info("No students are currently restricted.")
-                
-            st.markdown("---")
-            new_block = st.text_input("Enter a Matric Number to BLOCK (Restrict Access):", placeholder="e.g. PGCC20100001").strip().upper()
-            if st.button("🔒 Block Student"):
-                if new_block and new_block not in portal_data["restricted_matric_numbers"]:
-                    portal_data["restricted_matric_numbers"].append(new_block)
-                    save_portal_data(portal_data)
-                    st.success(f"{new_block} has been added to the restricted list.")
-                    st.rerun()
 
     elif entered_pin:
         st.error("❌ Incorrect Admin PIN. Access denied.")
