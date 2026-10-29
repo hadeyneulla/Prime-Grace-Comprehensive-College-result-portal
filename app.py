@@ -18,6 +18,8 @@ DATA_FILE = "portal_data_v2.json"
 ADMIN_PIN = "PGCC2026"  # 👉 Admin secret code
 
 CLASSES = ["JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"]
+TERMS = ["First Term", "Second Term", "Third Term"]
+
 TIMETABLE_MODES = [
     "Regular Class Timetable",
     "Mid-Term Test Timetable",
@@ -271,18 +273,20 @@ tab_results, tab_news, tab_timetable, tab_admin = st.tabs([
 ])
 
 # =============================================================
-# TAB 1: RESULT CHECKER
+# TAB 1: RESULT CHECKER (WITH TERM SELECTOR)
 # =============================================================
 with tab_results:
     st.markdown("""
         <div class="welcome-card">
             <strong>Dear Parents and Guardians,</strong><br>
-            Welcome to the official academic results portal. Enter your child's Matric/Admission number below to view and download their assessment sheet.<br><br>
+            Welcome to the official academic results portal. Select your term, enter your child's Matric/Admission number below to view and download their assessment sheet.<br><br>
             <em>Please note that downloaded results are password-protected using your child's exact matric number.</em>
         </div>
     """, unsafe_allow_html=True)
     
     st.markdown("<div class='section-heading'>🔍 Check Student Result</div>", unsafe_allow_html=True)
+    
+    selected_term = st.selectbox("Select Academic Term:", TERMS, key="result_term_select")
     matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20100001", key="matric_input_field").strip()
     search_clicked = st.button("Retrieve Result", key="retrieve_btn")
 
@@ -298,18 +302,25 @@ with tab_results:
                 st.warning("⚠️ **Result Not Available**")
                 st.info("Your child's result portal access is currently restricted or pending clearance (fee balance). Please contact the school administration for further details.")
             else:
-                pdf_folder = "." 
+                # Map term selection to folder path
+                term_folder_map = {
+                    "First Term": "Term_1",
+                    "Second Term": "Term_2",
+                    "Third Term": "."  # Main folder for current term
+                }
+                target_folder = term_folder_map.get(selected_term, ".")
+                
                 found_file = None
-                if os.path.exists(pdf_folder):
-                    for file in os.listdir(pdf_folder):
+                if os.path.exists(target_folder):
+                    for file in os.listdir(target_folder):
                         if file.lower().endswith(".pdf"):
                             clean_filename = clean_string(file.replace(".pdf", "").replace(".PDF", ""))
                             if clean_user_input in clean_filename or clean_filename in clean_user_input:
-                                found_file = os.path.join(pdf_folder, file)
+                                found_file = os.path.join(target_folder, file)
                                 break
 
                 if found_file:
-                    st.success("✅ Result Record Found Successfully!")
+                    st.success(f"✅ Result Record Found for {selected_term}!")
                     protected_pdf_buffer = encrypt_pdf(found_file, matric_input)
                     
                     st.markdown("---")
@@ -323,11 +334,11 @@ with tab_results:
                     st.download_button(
                         label="📥 Download Password-Protected PDF Result",
                         data=protected_pdf_buffer,
-                        file_name=f"PrimeGrace_Result_{clean_user_input}.pdf",
+                        file_name=f"PrimeGrace_{selected_term}_{clean_user_input}.pdf",
                         mime="application/pdf"
                     )
                 else:
-                    st.error("❌ No result file found matching that Admission/Matric Number.")
+                    st.error(f"❌ No result file found for {selected_term} matching that Matric Number.")
                     st.caption("Please check for typing errors or contact the school administration.")
 
 # =============================================================
@@ -390,21 +401,30 @@ with tab_admin:
         # --- Section A: Upload New Student Result PDF ---
         st.markdown("---")
         st.markdown("**📤 1. Upload Student Result PDF**")
-        st.caption("Upload a student result PDF directly. Name the file with their matric number (e.g. PGCC20250198.pdf).")
+        st.caption("Select the target term, then upload the student result PDF with their pure matric number (e.g. PGCC20250198.pdf).")
         
+        upload_term = st.selectbox("Select Term for Upload:", TERMS, key="admin_upload_term")
         uploaded_pdf = st.file_uploader("Choose Student Result PDF file:", type=["pdf"])
+        
         if uploaded_pdf is not None:
-            save_path = uploaded_pdf.name
+            if upload_term == "First Term":
+                save_dir = "Term_1"
+            elif upload_term == "Second Term":
+                save_dir = "Term_2"
+            else:
+                save_dir = "."
+                
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+                
+            save_path = os.path.join(save_dir, uploaded_pdf.name)
             with open(save_path, "wb") as f:
                 f.write(uploaded_pdf.getbuffer())
-            st.success(f"Successfully uploaded and saved **{save_path}** to the portal storage!")
-            st.info("Parents can now search and download this result immediately.")
+            st.success(f"Successfully uploaded **{uploaded_pdf.name}** under **{upload_term}** storage!")
 
-        # --- Section B: Student Result Access Control (Block / Unblock Defaulters) ---
+        # --- Section B: Student Result Access Control ---
         st.markdown("---")
         st.markdown("**🔒 2. Student Fee Clearance & Result Lock (Block/Unblock)**")
-        st.caption("Lock results for students with unpaid fees, or unblock them once they clear their balance.")
-        
         current_restricted = portal_data.get("restricted_matric_numbers", DEFAULT_RESTRICTED)
         
         col_block, col_unblock = st.columns(2)
