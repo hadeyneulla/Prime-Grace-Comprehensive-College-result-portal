@@ -1,4 +1,5 @@
 import os
+import json
 import streamlit as st
 import pandas as pd
 from pypdf import PdfReader, PdfWriter
@@ -13,17 +14,59 @@ st.set_page_config(
     layout="centered"
 )
 
+DATA_FILE = "portal_data.json"
+ADMIN_PIN = "PGCC2026"  # 👉 Set your preferred Admin secret code here
+
 # -------------------------------------------------------------
-# SLEEK STYLING & HIGH-CONTRAST MOBILE SUPPORT
+# PERSISTENT DATA HANDLERS (LOAD & SAVE)
+# -------------------------------------------------------------
+def load_portal_data():
+    default_data = {
+        "news": [
+            {
+                "tag": "ADMINISTRATION",
+                "title": "Resumption Date for Next Term",
+                "body": "All boarding students are expected to resume on Sunday, while day students commence on Monday at 7:45 AM prompt."
+            },
+            {
+                "tag": "ACADEMICS",
+                "title": "BECE & WAEC Extension Classes",
+                "body": "Special tutorial sessions for JSS 3 and SS 3 students will continue as scheduled. Attendance is compulsory."
+            }
+        ],
+        "timetable_type": "Regular Class Timetable",
+        "timetable_rows": [
+            {"Period": "Period 1 (8:00 - 8:45 AM)", "Monday": "Mathematics", "Tuesday": "English Studies", "Wednesday": "Basic Tech", "Thursday": "Mathematics", "Friday": "Civic Edu."},
+            {"Period": "Period 2 (8:45 - 9:30 AM)", "Monday": "English Studies", "Tuesday": "Mathematics", "Wednesday": "Mathematics", "Thursday": "English Studies", "Friday": "Mathematics"},
+            {"Period": "Break (9:30 - 9:45 AM)", "Monday": "Break", "Tuesday": "Break", "Wednesday": "Break", "Thursday": "Break", "Friday": "Break"},
+            {"Period": "Period 3 (9:45 - 10:30 AM)", "Monday": "Basic Science", "Tuesday": "Civic Edu.", "Wednesday": "French", "Thursday": "Social Studies", "Friday": "Library"},
+            {"Period": "Period 4 (10:30 - 11:15 AM)", "Monday": "Social Studies", "Tuesday": "Agric Sci.", "Wednesday": "Yoruba", "Thursday": "Basic Science", "Friday": "Clubs"}
+        ]
+    }
+    if not os.path.exists(DATA_FILE):
+        with open(DATA_FILE, "w") as f:
+            json.dump(default_data, f, indent=4)
+        return default_data
+    try:
+        with open(DATA_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return default_data
+
+def save_portal_data(data):
+    with open(DATA_FILE, "w") as f:
+        json.dump(data, f, indent=4)
+
+portal_data = load_portal_data()
+
+# -------------------------------------------------------------
+# PROFESSIONAL STYLING (MOBILE THEME OVERRIDES)
 # -------------------------------------------------------------
 st.markdown("""
     <style>
-    /* Clean white background */
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #FFFFFF !important;
     }
-    
-    /* Center logo */
     [data-testid="stImage"] {
         display: flex;
         justify-content: center;
@@ -31,8 +74,6 @@ st.markdown("""
         margin-top: 10px;
         margin-bottom: -10px;
     }
-    
-    /* Typography */
     .main-title { 
         text-align: center !important; 
         color: #0A4D2E !important; 
@@ -49,8 +90,6 @@ st.markdown("""
         font-size: 1rem !important; 
         font-weight: 600 !important;
     }
-    
-    /* Welcome & Notice Cards */
     .welcome-card { 
         background-color: #F8FBF9 !important; 
         padding: 20px !important; 
@@ -80,8 +119,6 @@ st.markdown("""
         display: inline-block !important;
         margin-bottom: 8px !important;
     }
-    
-    /* Buttons */
     div.stButton > button, div.stDownloadButton > button { 
         width: 100% !important; 
         background-color: #0A4D2E !important; 
@@ -94,13 +131,8 @@ st.markdown("""
         font-weight: bold !important; 
         font-size: 1.05rem !important;
     }
-    div.stButton > button:hover, div.stDownloadButton > button:hover { 
-        background-color: #073820 !important; 
-    }
-    
-    /* Tab Styling */
     button[data-baseweb="tab"] {
-        font-size: 1rem !important;
+        font-size: 0.95rem !important;
         font-weight: bold !important;
         color: #333333 !important;
     }
@@ -108,7 +140,6 @@ st.markdown("""
         color: #0A4D2E !important;
         border-bottom-color: #0A4D2E !important;
     }
-    
     label, p, span {
         color: #222222 !important;
     }
@@ -141,9 +172,6 @@ RESTRICTED_MATRIC_NUMBERS = [
     "PGCC20250227",  # Ogunsola Ramat (SS 2)
 ]
 
-# -------------------------------------------------------------
-# HELPER FUNCTIONS
-# -------------------------------------------------------------
 def clean_string(text):
     if not text:
         return ""
@@ -161,12 +189,13 @@ def encrypt_pdf(file_path, password):
     return buffer
 
 # -------------------------------------------------------------
-# MINI WEBSITE TABS
+# TABS (INCLUDES SECRET ADMIN/STAFF TAB)
 # -------------------------------------------------------------
-tab_results, tab_news, tab_timetable = st.tabs([
+tab_results, tab_news, tab_timetable, tab_admin = st.tabs([
     "🎓 Student Result", 
-    "📢 School Notice & News", 
-    "📅 Class Timetable"
+    "📢 News & Notices", 
+    "📅 Timetable",
+    "🔐 Staff Admin"
 ])
 
 # =============================================================
@@ -181,7 +210,7 @@ with tab_results:
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h3 style='color: #0A4D2E !important; margin-bottom: 0px;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
+    st.markdown("<h3 style='color: #0A4D2E !important;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
     matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20100001", key="matric_input_field").strip()
     search_clicked = st.button("Retrieve Result", key="retrieve_btn")
 
@@ -190,8 +219,6 @@ with tab_results:
             st.warning("Please enter a valid Admission/Matric number.")
         else:
             clean_user_input = clean_string(matric_input)
-            
-            # Check if student access is restricted
             is_blocked = any(clean_user_input == clean_string(m) for m in RESTRICTED_MATRIC_NUMBERS)
             
             if is_blocked:
@@ -200,7 +227,6 @@ with tab_results:
             else:
                 pdf_folder = "." 
                 found_file = None
-                
                 if os.path.exists(pdf_folder):
                     for file in os.listdir(pdf_folder):
                         if file.lower().endswith(".pdf"):
@@ -232,53 +258,76 @@ with tab_results:
                     st.caption("Please check for typing errors or contact the school administration.")
 
 # =============================================================
-# TAB 2: SCHOOL NEWS & ANNOUNCEMENTS
+# TAB 2: LIVE NOTICES
 # =============================================================
 with tab_news:
     st.markdown("<h3 style='color: #0A4D2E !important;'>📢 Notice Board & Updates</h3>", unsafe_allow_html=True)
-    
-    st.markdown("""
-        <div class="news-card">
-            <span class="news-tag">ADMINISTRATION</span>
-            <h4 style="margin: 0; color: #0A4D2E;">Resumption Date for Next Term</h4>
-            <p style="margin-top: 5px; color: #555;">All boarding students are expected to resume on Sunday, while day students will commence full academic activities on Monday at 7:45 AM prompt.</p>
-        </div>
-        
-        <div class="news-card">
-            <span class="news-tag">ACADEMICS</span>
-            <h4 style="margin: 0; color: #0A4D2E;">BECE & WAEC Extension Classes</h4>
-            <p style="margin-top: 5px; color: #555;">Special tutorial sessions for JSS 3 and SS 3 students will continue as scheduled. Attendance is mandatory for all examination candidates.</p>
-        </div>
-
-        <div class="news-card">
-            <span class="news-tag">ANNOUNCEMENT</span>
-            <h4 style="margin: 0; color: #0A4D2E;">Parent-Teacher Association (PTA) Meeting</h4>
-            <p style="margin-top: 5px; color: #555;">The general PTA meeting is scheduled to hold at the school assembly hall. Time: 10:00 AM. Your prompt attendance is appreciated.</p>
-        </div>
-    """, unsafe_allow_html=True)
+    for item in portal_data.get("news", []):
+        st.markdown(f"""
+            <div class="news-card">
+                <span class="news-tag">{item.get('tag', 'NOTICE')}</span>
+                <h4 style="margin: 0; color: #0A4D2E;">{item.get('title', '')}</h4>
+                <p style="margin-top: 5px; color: #555;">{item.get('body', '')}</p>
+            </div>
+        """, unsafe_allow_html=True)
 
 # =============================================================
-# TAB 3: CLASS TIMETABLE
+# TAB 3: LIVE TIMETABLE
 # =============================================================
 with tab_timetable:
-    st.markdown("<h3 style='color: #0A4D2E !important;'>📅 Class Academic Timetable</h3>", unsafe_allow_html=True)
+    tt_title = portal_data.get("timetable_type", "School Timetable")
+    st.markdown(f"<h3 style='color: #0A4D2E !important;'>📅 {tt_title}</h3>", unsafe_allow_html=True)
     
-    selected_class = st.selectbox("Select Class to View Timetable:", [
-        "JSS 1", "JSS 2", "JSS 3", "SS 1", "SS 2", "SS 3"
-    ])
+    df_tt = pd.DataFrame(portal_data.get("timetable_rows", []))
+    if not df_tt.empty:
+        st.dataframe(df_tt, hide_index=True, use_container_width=True)
+    else:
+        st.info("Timetable is currently being updated by the administration.")
+
+# =============================================================
+# TAB 4: HIDDEN ADMIN PORTAL (PROTECTED BY PIN)
+# =============================================================
+with tab_admin:
+    st.markdown("<h3 style='color: #0A4D2E !important;'>🔐 Staff & Admin Dashboard</h3>", unsafe_allow_html=True)
+    st.caption("Enter the administrator passcode to update announcements or change timetables.")
     
-    # Sample daily schedule structure (edit or expand as needed)
-    timetable_data = {
-        "Period": ["Period 1 (8:00 - 8:45 AM)", "Period 2 (8:45 - 9:30 AM)", "Short Break (9:30 - 9:45 AM)", "Period 3 (9:45 - 10:30 AM)", "Period 4 (10:30 - 11:15 AM)", "Long Break (11:15 - 11:55 AM)", "Period 5 (11:55 - 12:40 PM)", "Period 6 (12:40 - 1:25 PM)"],
-        "Monday": ["Mathematics", "English Studies", "Break", "Basic Science", "Social Studies", "Break", "Business Studies", "Computer Studies"],
-        "Tuesday": ["English Studies", "Mathematics", "Break", "Civic Education", "Agricultural Sci.", "Break", "Christian Rel. Studies", "Fine Arts"],
-        "Wednesday": ["Basic Technology", "Mathematics", "Break", "English Studies", "French", "Break", "Yoruba", "Physical & Health Edu."],
-        "Thursday": ["Mathematics", "English Studies", "Break", "Social Studies", "Basic Science", "Break", "Home Economics", "Music"],
-        "Friday": ["Civic Education", "Mathematics", "Break", "English Studies", "Library Period", "Break", "Clubs & Societies", "Closing Assembly"]
-    }
+    entered_pin = st.text_input("Enter Admin Secret PIN:", type="password", key="admin_pin_input")
     
-    st.caption(f"Displaying regular academic timetable for **{selected_class}**:")
-    df_timetable = pd.DataFrame(timetable_data)
-    st.dataframe(df_timetable, hide_index=True, use_container_width=True)
-    
-    st.info("💡 Morning Assembly commences by 7:45 AM every weekday.")
+    if entered_pin == ADMIN_PIN:
+        st.success("✅ Access Granted: Welcome Administrator!")
+        
+        # --- Section A: Manage News ---
+        st.markdown("#### ✏️ Update School Notices")
+        with st.expander("➕ Add New Announcement / Notice"):
+            new_tag = st.selectbox("Category Tag:", ["ADMINISTRATION", "ACADEMICS", "ANNOUNCEMENT", "EXAMINATION", "EVENT"])
+            new_title = st.text_input("Notice Title:")
+            new_body = st.text_area("Notice Description:")
+            if st.button("Publish Notice"):
+                if new_title and new_body:
+                    portal_data["news"].insert(0, {"tag": new_tag, "title": new_title, "body": new_body})
+                    save_portal_data(portal_data)
+                    st.success("Announcement published! Refresh the page to see live updates.")
+                    st.rerun()
+                else:
+                    st.warning("Please fill out both the title and details.")
+        
+        # --- Section B: Manage Timetable ---
+        st.markdown("#### ✏️ Update Timetable Mode & Schedule")
+        new_tt_type = st.selectbox("Timetable Schedule Mode:", [
+            "Regular Class Timetable",
+            "Mid-Term Test Timetable",
+            "Terminal Examination Timetable"
+        ], index=0)
+        
+        st.caption("Edit timetable rows below (you can add rows, change subjects, and modify times):")
+        editable_df = st.data_editor(pd.DataFrame(portal_data.get("timetable_rows", [])), num_rows="dynamic", use_container_width=True)
+        
+        if st.button("💾 Save All Timetable Changes"):
+            portal_data["timetable_type"] = new_tt_type
+            portal_data["timetable_rows"] = editable_df.to_dict(orient="records")
+            save_portal_data(portal_data)
+            st.success("Timetable updated successfully!")
+            st.rerun()
+
+    elif entered_pin:
+        st.error("❌ Incorrect Admin PIN. Access denied.")
