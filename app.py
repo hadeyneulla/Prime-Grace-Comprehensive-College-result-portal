@@ -24,6 +24,17 @@ TIMETABLE_MODES = [
     "Terminal Examination Timetable"
 ]
 
+DEFAULT_RESTRICTED = [
+    "PGCC20250215",  # Ogunsola Muiz (JSS 2)
+    "PGCC20250218",  # Fatai Feranmi (JSS 3)
+    "PGCC20230162",  # Akinlesi Semilore (JSS 3)
+    "PGCC20230167",  # Dauda Muibat (JSS 3)
+    "PGCC20230171",  # Ogunmuyiwa Roheem (JSS 3)
+    "PGCC20250221",  # Ogunsola Waliyat (SS 1)
+    "PGCC20220145",  # Olatokun Oyinkansola (SS 1)
+    "PGCC20250227",  # Ogunsola Ramat (SS 2)
+]
+
 # -------------------------------------------------------------
 # DEFAULT TIMETABLE TEMPLATES
 # -------------------------------------------------------------
@@ -71,6 +82,7 @@ def load_portal_data():
 
     default_data = {
         "active_timetable_mode": "Regular Class Timetable",
+        "restricted_matric_numbers": DEFAULT_RESTRICTED,
         "news": [
             {
                 "tag": "ADMINISTRATION",
@@ -98,11 +110,12 @@ def load_portal_data():
     try:
         with open(DATA_FILE, "r") as f:
             data = json.load(f)
-            # Ensure structure is complete
             if "timetables" not in data:
                 data["timetables"] = default_timetables
             if "active_timetable_mode" not in data:
                 data["active_timetable_mode"] = "Regular Class Timetable"
+            if "restricted_matric_numbers" not in data:
+                data["restricted_matric_numbers"] = DEFAULT_RESTRICTED
             return data
     except:
         return default_data
@@ -114,10 +127,15 @@ def save_portal_data(data):
 portal_data = load_portal_data()
 
 # -------------------------------------------------------------
-# PROFESSIONAL STYLING (MOBILE THEME OVERRIDES)
+# PROFESSIONAL STYLING (CLEAN URL & MOBILE THEME OVERRIDES)
 # -------------------------------------------------------------
 st.markdown("""
     <style>
+    /* Hide Streamlit's automatic # anchor links on headings so URL stays clean */
+    [data-testid="stHeaderActionElements"], .stMarkdown a.anchor-link {
+        display: none !important;
+    }
+
     .stApp, [data-testid="stAppViewContainer"] {
         background-color: #FFFFFF !important;
     }
@@ -143,6 +161,13 @@ st.markdown("""
         margin-bottom: 20px !important; 
         font-size: 1rem !important; 
         font-weight: 600 !important;
+    }
+    .section-heading {
+        color: #0A4D2E !important;
+        font-weight: 700 !important;
+        font-size: 1.35rem !important;
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
     }
     .welcome-card { 
         background-color: #F8FBF9 !important; 
@@ -173,6 +198,12 @@ st.markdown("""
         display: inline-block !important;
         margin-bottom: 8px !important;
     }
+    .news-title {
+        margin: 0 !important;
+        color: #0A4D2E !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+    }
     div.stButton > button, div.stDownloadButton > button { 
         width: 100% !important; 
         background-color: #0A4D2E !important; 
@@ -201,7 +232,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 🏫 HEADER & LOGO
+# 🏫 HEADER & LOGO (USING DIVS TO PREVENT # URL ANCHORS)
 # -------------------------------------------------------------
 c1, c2, c3 = st.columns([1, 1, 1])
 with c2:
@@ -209,23 +240,12 @@ with c2:
     if logo_file:
         st.image(logo_file, use_container_width=True)
 
-st.markdown("<h1 class='main-title'>Prime Grace Comprehensive College</h1>", unsafe_allow_html=True)
-st.markdown("<h4 class='sub-title'>Excellency of His Grace • Student & Parent Portal</h4>", unsafe_allow_html=True)
+st.markdown("<div class='main-title'>Prime Grace Comprehensive College</div>", unsafe_allow_html=True)
+st.markdown("<div class='sub-title'>Excellency of His Grace • Student & Parent Portal</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 🔒 RESTRICTED MATRIC NUMBERS
+# HELPER FUNCTIONS
 # -------------------------------------------------------------
-RESTRICTED_MATRIC_NUMBERS = [
-    "PGCC20250215",  # Ogunsola Muiz (JSS 2)
-    "PGCC20250218",  # Fatai Feranmi (JSS 3)
-    "PGCC20230162",  # Akinlesi Semilore (JSS 3)
-    "PGCC20230167",  # Dauda Muibat (JSS 3)
-    "PGCC20230171",  # Ogunmuyiwa Roheem (JSS 3)
-    "PGCC20250221",  # Ogunsola Waliyat (SS 1)
-    "PGCC20220145",  # Olatokun Oyinkansola (SS 1)
-    "PGCC20250227",  # Ogunsola Ramat (SS 2)
-]
-
 def clean_string(text):
     if not text:
         return ""
@@ -264,7 +284,7 @@ with tab_results:
         </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("<h3 style='color: #0A4D2E !important;'>🔍 Check Student Result</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='section-heading'>🔍 Check Student Result</div>", unsafe_allow_html=True)
     matric_input = st.text_input("Enter Student Matric / Admission Number:", placeholder="e.g. PGCC20100001", key="matric_input_field").strip()
     search_clicked = st.button("Retrieve Result", key="retrieve_btn")
 
@@ -273,7 +293,8 @@ with tab_results:
             st.warning("Please enter a valid Admission/Matric number.")
         else:
             clean_user_input = clean_string(matric_input)
-            is_blocked = any(clean_user_input == clean_string(m) for m in RESTRICTED_MATRIC_NUMBERS)
+            restricted_list = portal_data.get("restricted_matric_numbers", DEFAULT_RESTRICTED)
+            is_blocked = any(clean_user_input == clean_string(m) for m in restricted_list)
             
             if is_blocked:
                 st.warning("⚠️ **Result Not Available**")
@@ -294,7 +315,7 @@ with tab_results:
                     protected_pdf_buffer = encrypt_pdf(found_file, matric_input)
                     
                     st.markdown("---")
-                    st.markdown("<h3 style='color: #0A4D2E !important;'>🔒 Security Notice</h3>", unsafe_allow_html=True)
+                    st.markdown("<div class='section-heading'>🔒 Security Notice</div>", unsafe_allow_html=True)
                     st.info(
                         f"This PDF file is password-protected for privacy.\n\n"
                         f"**Password to open the PDF:** `{matric_input}`\n\n"
@@ -315,7 +336,7 @@ with tab_results:
 # TAB 2: LIVE NOTICES
 # =============================================================
 with tab_news:
-    st.markdown("<h3 style='color: #0A4D2E !important;'>📢 Notice Board & Updates</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='section-heading'>📢 Notice Board & Updates</div>", unsafe_allow_html=True)
     news_list = portal_data.get("news", [])
     if not news_list:
         st.info("No announcements posted at the moment.")
@@ -323,7 +344,7 @@ with tab_news:
         st.markdown(f"""
             <div class="news-card">
                 <span class="news-tag">{item.get('tag', 'NOTICE')}</span>
-                <h4 style="margin: 0; color: #0A4D2E;">{item.get('title', '')}</h4>
+                <div class="news-title">{item.get('title', '')}</div>
                 <p style="margin-top: 5px; color: #555;">{item.get('body', '')}</p>
             </div>
         """, unsafe_allow_html=True)
@@ -332,7 +353,7 @@ with tab_news:
 # TAB 3: MULTI-CLASS & MULTI-MODE TIMETABLE
 # =============================================================
 with tab_timetable:
-    st.markdown("<h3 style='color: #0A4D2E !important;'>📅 Academic & Examination Timetables</h3>", unsafe_allow_html=True)
+    st.markdown("<div class='section-heading'>📅 Academic & Examination Timetables</div>", unsafe_allow_html=True)
     
     active_default_mode = portal_data.get("active_timetable_mode", "Regular Class Timetable")
     default_mode_index = TIMETABLE_MODES.index(active_default_mode) if active_default_mode in TIMETABLE_MODES else 0
@@ -360,8 +381,8 @@ with tab_timetable:
 # TAB 4: STAFF ADMIN DASHBOARD (PROTECTED BY PIN)
 # =============================================================
 with tab_admin:
-    st.markdown("<h3 style='color: #0A4D2E !important;'>🔐 Staff & Admin Dashboard</h3>", unsafe_allow_html=True)
-    st.caption("Enter the administrator passcode to manage announcements and class timetables.")
+    st.markdown("<div class='section-heading'>🔐 Staff & Admin Dashboard</div>", unsafe_allow_html=True)
+    st.caption("Enter the administrator passcode to manage announcements, timetables, and student result access.")
     
     entered_pin = st.text_input("Enter Admin Secret PIN:", type="password", key="admin_pin_input")
     
@@ -370,7 +391,7 @@ with tab_admin:
         
         # --- Section A: Manage News ---
         st.markdown("---")
-        st.markdown("#### 📢 1. Manage School Notices & News")
+        st.markdown("**📢 1. Manage School Notices & News**")
         
         with st.expander("➕ Publish a New Announcement"):
             new_tag = st.selectbox("Category Tag:", ["ADMINISTRATION", "ACADEMICS", "ANNOUNCEMENT", "EXAMINATION", "EVENT"])
@@ -400,17 +421,15 @@ with tab_admin:
 
         # --- Section B: Manage Timetables ---
         st.markdown("---")
-        st.markdown("#### 📅 2. Edit Class & Exam Timetables")
+        st.markdown("**📅 2. Edit Class & Exam Timetables**")
         
-        # Set Default Active Timetable Mode for Parents
         current_active = portal_data.get("active_timetable_mode", "Regular Class Timetable")
         active_idx = TIMETABLE_MODES.index(current_active) if current_active in TIMETABLE_MODES else 0
         
         new_default_mode = st.selectbox(
             "📌 Set Default Timetable Mode Shown to Parents First:",
             TIMETABLE_MODES,
-            index=active_idx,
-            help="When parents open the Timetable tab, this mode will automatically be selected first."
+            index=active_idx
         )
         if new_default_mode != current_active:
             if st.button("Update Default Timetable Mode"):
@@ -419,7 +438,6 @@ with tab_admin:
                 st.success(f"Default view set to: {new_default_mode}!")
                 st.rerun()
 
-        st.markdown("##### ✏️ Select Class & Timetable to Edit:")
         adm_col1, adm_col2 = st.columns(2)
         with adm_col1:
             edit_class = st.selectbox("Target Class:", CLASSES, key="admin_edit_class")
@@ -428,7 +446,7 @@ with tab_admin:
         
         current_table_data = portal_data["timetables"].get(edit_class, {}).get(edit_mode, [])
         
-        st.caption(f"Editing **{edit_mode}** for **{edit_class}** (Click any cell to edit, or use the '+' at the bottom of the table to add rows):")
+        st.caption(f"Editing **{edit_mode}** for **{edit_class}**:")
         editable_df = st.data_editor(
             pd.DataFrame(current_table_data),
             num_rows="dynamic",
@@ -452,6 +470,31 @@ with tab_admin:
                 save_portal_data(portal_data)
                 st.success(f"Copied and saved {edit_mode} across all classes (JSS 1 - SS 3)!")
                 st.rerun()
+
+        # --- Section C: Manage Restricted Students ---
+        st.markdown("---")
+        st.markdown("**🔒 3. Student Result Access Control (Block / Unblock)**")
+        current_restricted = portal_data.get("restricted_matric_numbers", DEFAULT_RESTRICTED)
+        
+        with st.expander(f"Manage Restricted Students ({len(current_restricted)} currently blocked)"):
+            if current_restricted:
+                unblock_student = st.selectbox("Select a Matric Number to UNBLOCK (Grant Access):", current_restricted)
+                if st.button("🔓 Unblock Selected Student"):
+                    portal_data["restricted_matric_numbers"].remove(unblock_student)
+                    save_portal_data(portal_data)
+                    st.success(f"Access granted for {unblock_student}!")
+                    st.rerun()
+            else:
+                st.info("No students are currently restricted.")
+                
+            st.markdown("---")
+            new_block = st.text_input("Enter a Matric Number to BLOCK (Restrict Access):", placeholder="e.g. PGCC20100001").strip().upper()
+            if st.button("🔒 Block Student"):
+                if new_block and new_block not in portal_data["restricted_matric_numbers"]:
+                    portal_data["restricted_matric_numbers"].append(new_block)
+                    save_portal_data(portal_data)
+                    st.success(f"{new_block} has been added to the restricted list.")
+                    st.rerun()
 
     elif entered_pin:
         st.error("❌ Incorrect Admin PIN. Access denied.")
